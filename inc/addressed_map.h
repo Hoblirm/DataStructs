@@ -9,15 +9,19 @@ template <class T> class addressed_map {
   addressed_map();
   ~addressed_map();
 
+  typedef typename std::list<T>::iterator iterator;
+
   void insert(int key, const T& obj);
-  T* find(int key);
-  T* end();
+  iterator find(int key);
+  iterator erase(int key);
+  iterator end();
 
   size_t size();
+  size_t content_size();
   size_t capacity();
 
   private:
-  T** mAddressList;
+  iterator* mAddressList;
   std::list<T> mContent;
 
   int mSize;
@@ -33,7 +37,10 @@ template <class T> addressed_map<T>::addressed_map() {
   mSize = 0;
   mMinKeyAssigned = false;
   mCapacity = 4;
-  mAddressList = new T*[mCapacity]();
+  mAddressList = new iterator[mCapacity];
+  for (int i=0;i<mCapacity;i++){
+     mAddressList[i] = end();
+  }
 }
 
 template <class T> addressed_map<T>::~addressed_map() {
@@ -51,31 +58,36 @@ template <class T> void addressed_map<T>::insert(int key, const T& obj) {
     grow_list(key);
   }
 
-  mAddressList[key - mMinKey] = &(*mContent.insert(mContent.end(),obj));
+  mAddressList[key - mMinKey] = mContent.insert(mContent.end(),obj);
   mSize++;
 }
 
-template <class T> T* addressed_map<T>::find(int key) {
+template <class T> typename std::list<T>::iterator addressed_map<T>::find(int key) {
   if ( (key < mMinKey) || ((key - mMinKey) >= mCapacity) ) {
     return end();
   } else {
-
-    T* iterator = mAddressList[key - mMinKey];
-
-    if (iterator) { 
-      return iterator;
-    }
-    else {
-      return end();
-    }
+    return mAddressList[key - mMinKey];
   }
 }
 
-template <class T> T* addressed_map<T>::end() {
-  return &(*mContent.end());
+template <class T> typename std::list<T>::iterator addressed_map<T>::erase(int key) {
+   iterator it = find(key);
+
+   if (it != end()){
+      mContent.erase(it);
+      mAddressList[key - mMinKey] = end();
+      mSize--;
+   }
+      
+   return it;
+}
+
+template <class T> typename std::list<T>::iterator addressed_map<T>::end() {
+   return mContent.end();
 }
 
 template <class T> size_t addressed_map<T>::size() { return mSize;}
+template <class T> size_t addressed_map<T>::content_size() { return mContent.size();}
 template <class T> size_t addressed_map<T>::capacity() { return mCapacity;}
 
 template <class T> void addressed_map<T>::readdress_list(int key) {
@@ -85,7 +97,10 @@ template <class T> void addressed_map<T>::readdress_list(int key) {
     mCapacity *= 2;
   }
 
-  T** tmpList = new T*[mCapacity]();
+  iterator* tmpList = new iterator[mCapacity];
+  for (int i=0;i<mCapacity;i++){
+         tmpList[i] = end();
+  }
   for (int i=0; i < prevCapacity; i++) {
     tmpList[i+mCapacity-prevCapacity] = mAddressList[i];
   }
@@ -100,7 +115,10 @@ template <class T> void addressed_map<T>::grow_list(int key) {
     mCapacity *=2;
   }
 
-  T** tmpList = new T*[mCapacity]();
+  iterator* tmpList = new iterator[mCapacity];
+  for (int i=0;i<mCapacity;i++){
+    tmpList[i] = end();
+  }
   for (int i=0; i < prevCapacity; i++) {
     tmpList[i] = mAddressList[i];
   }

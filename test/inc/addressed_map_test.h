@@ -121,4 +121,37 @@ class addressed_map_test : public CxxTest::TestSuite {
       TS_ASSERT(list.find(-1) == list.end());
     }
 
+    // It should be able to remove entries by key.
+    void testKeyRemoval(void) {
+       addressed_map<string> list;
+
+       string str1("Apple");
+       string str2("Banana");
+       string str3("Carrot");
+
+       list.insert(0,str1);
+       list.insert(1,str2);
+       list.insert(2,str3);
+
+       // Verify everything was properly inserted.
+       TS_ASSERT(*list.find(0) == "Apple");
+       TS_ASSERT(*list.find(1) == "Banana");
+       TS_ASSERT(*list.find(2) == "Carrot");
+       TS_ASSERT_EQUALS(list.size(),3);
+       TS_ASSERT_EQUALS(list.content_size(),3);
+
+       // Remove the middle entry.
+       addressed_map<string>::iterator it = list.erase(1);
+
+       // Ensure that the middle entry was removed.
+       TS_ASSERT_EQUALS(*it,"Banana");
+       TS_ASSERT_EQUALS(list.size(),2);
+       TS_ASSERT_EQUALS(list.content_size(),2);
+       TS_ASSERT_EQUALS(list.find(-1), list.end());
+       TS_ASSERT_EQUALS(*list.find(0), "Apple");
+       TS_ASSERT_EQUALS(list.find(1), list.end());
+       TS_ASSERT_EQUALS(*list.find(2), "Carrot");
+       TS_ASSERT_EQUALS(list.find(4), list.end());
+    }
+
 };

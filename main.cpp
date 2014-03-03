@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <map>
 #include "addressed_map.h"
-#include <tr1/unordered_set>
 
 #include <sstream>
 #include <iostream>
@@ -16,7 +15,6 @@
 
 static struct timeval now;
 static double start_time, stop_time;
-static std::tr1::hash<int> hasher;
 
 class Telem_t {
   public:
@@ -74,7 +72,6 @@ int main(int argc, char** argv) {
   Telem_t telem[SIZE];
   ObjMap_t objMap[SIZE];
   std::map<Telem_t,std::string> ordered_list;
-  std::tr1::unordered_set<ObjMap_t, HashFunc, CmpFunc> unordered_list;
   addressed_map<ObjMap_t> addressed_list;
   for (int i=0;i<SIZE;i++){
     std::stringstream ss;
@@ -89,7 +86,6 @@ int main(int argc, char** argv) {
     objMap[i].id = i+MIN;
 
     ordered_list.insert(std::pair<Telem_t,std::string>(telem[i],objMap[i].desc));
-    unordered_list.insert(objMap[i]);
     addressed_list.insert(i+MIN,objMap[i]);
   }
 
@@ -99,36 +95,23 @@ int main(int argc, char** argv) {
   }
   stop_test();
 
-  start_test("Unordered List");
-  for (int i=0;i<SIZE;i++){
-    unordered_list.find(objMap[i]);
-  }
-  stop_test();
-
   start_test("Ordered List");
   for (int i=0;i<SIZE;i++){
     ordered_list.find(telem[i]);
   } 
   stop_test();
 
-  ObjMap_t* a = addressed_list.find(17);
-  std::tr1::unordered_set<ObjMap_t>::iterator u = unordered_list.find(objMap[100017]);
+  addressed_map<ObjMap_t>::iterator a = addressed_list.find(17);
 
   std::cout << "The value for addressed is:\n";
   std::cout << "  " << a->telem->id << "\n";
   std::cout << "  " << a->telem->name << "\n";
   std::cout << "  " << a->desc << "\n";
   
-  std::cout << "The value for unordered is:\n";
-  std::cout << "  " << u->telem->id << "\n";
-  std::cout << "  " << u->telem->name << "\n";
-  std::cout << "  " << u->desc << "\n";
-
   Telem_t tel;
   ObjMap_t obj;
   obj.telem = &tel;
   obj.telem->id = -10;
-//  std::tr1::unordered_set<ObjMap_t>::iterator uu = unordered_list.find(obj);
   
   std::cout << "Trying to find 300000\n";
   if (addressed_list.find(300000) == addressed_list.end()) {
