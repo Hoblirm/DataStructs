@@ -91,21 +91,21 @@ class addressed_map_test : public CxxTest::TestSuite {
         TS_ASSERT_EQUALS(*list.find(key),key*10);
       }
 
-      // Verify that all the unused keys return end();
-      TS_ASSERT_EQUALS(list.find(-400001),list.end());
+      // Verify that all the unused keys return 0
+      TS_ASSERT(list.find(-400001) == 0);
       for (int key=-299999;key < -100000; key++) {
-        TS_ASSERT_EQUALS(list.find(key),list.end());
+        TS_ASSERT(list.find(key) == 0);
       }
       for (int key=-999;key < -20; key++) {
-        TS_ASSERT_EQUALS(list.find(key),list.end());
+        TS_ASSERT(list.find(key) == 0);
       }
       for (int key=101; key < 10000; key++) {
-        TS_ASSERT_EQUALS(list.find(key),list.end());
+        TS_ASSERT(list.find(key) == 0);
       }
-      TS_ASSERT_EQUALS(list.find(300001),list.end());
+      TS_ASSERT(list.find(300001) == 0);
     }
 
-    // It should return end() for an invalid key.
+    // It should return 0 for an invalid key.
     void testInvalidKey(void) {
       addressed_map<string> list;
 
@@ -117,8 +117,8 @@ class addressed_map_test : public CxxTest::TestSuite {
       list.insert(1,str2);
       list.insert(2,str3);
 
-      TS_ASSERT(list.find(3) == list.end());
-      TS_ASSERT(list.find(-1) == list.end());
+      TS_ASSERT(list.find(3) == 0);
+      TS_ASSERT(list.find(-1) == 0);
     }
 
     // It should be able to remove entries by key.
@@ -138,20 +138,20 @@ class addressed_map_test : public CxxTest::TestSuite {
        TS_ASSERT(*list.find(1) == "Banana");
        TS_ASSERT(*list.find(2) == "Carrot");
        TS_ASSERT_EQUALS(list.size(),3);
-       TS_ASSERT_EQUALS(list.content_size(),3);
+       //TS_ASSERT_EQUALS(list.content_size(),3);
 
        // Remove the middle entry.
-       addressed_map<string>::iterator it = list.erase(1);
+       list.erase(1);
 
        // Ensure that the middle entry was removed.
-       TS_ASSERT_EQUALS(*it,"Banana");
+       //TS_ASSERT_EQUALS(*str_ptr,"Banana");
        TS_ASSERT_EQUALS(list.size(),2);
-       TS_ASSERT_EQUALS(list.content_size(),2);
-       TS_ASSERT_EQUALS(list.find(-1), list.end());
+//       TS_ASSERT_EQUALS(list.content_size(),2);
+       TS_ASSERT(list.find(-1) == 0);
        TS_ASSERT_EQUALS(*list.find(0), "Apple");
-       TS_ASSERT_EQUALS(list.find(1), list.end());
+       TS_ASSERT(list.find(1) == 0);
        TS_ASSERT_EQUALS(*list.find(2), "Carrot");
-       TS_ASSERT_EQUALS(list.find(4), list.end());
+       TS_ASSERT(list.find(4) == 0);
     }
 
 };

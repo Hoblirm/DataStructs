@@ -101,7 +101,7 @@ int main(int argc, char** argv) {
   } 
   stop_test();
 
-  addressed_map<ObjMap_t>::iterator a = addressed_list.find(17);
+  ObjMap_t* a = addressed_list.find(17);
 
   std::cout << "The value for addressed is:\n";
   std::cout << "  " << a->telem->id << "\n";
@@ -114,14 +114,14 @@ int main(int argc, char** argv) {
   obj.telem->id = -10;
   
   std::cout << "Trying to find 300000\n";
-  if (addressed_list.find(300000) == addressed_list.end()) {
+  if (!addressed_list.find(300000)) {
     std::cout << "  NOT FOUND\n";
   } else {
     std::cout << "  FOUND\n";
   }
 
   std::cout << "Trying to find 1000\n";
-  if (addressed_list.find(1000) == addressed_list.end()) {
+  if (!addressed_list.find(1000)) {
     std::cout << "  NOT FOUND\n";
   } else {
     std::cout << "  FOUND\n";
