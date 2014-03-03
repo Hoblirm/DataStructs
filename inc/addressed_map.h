@@ -12,8 +12,8 @@ template <class T> class addressed_map {
   T* erase(int key);
   void clear();
 
-  size_t size();
-  size_t capacity();
+  int size();
+  int capacity();
 
   private:
   T** mList;
@@ -80,8 +80,8 @@ template <class T> T* addressed_map<T>::erase(int key) {
    return ptr;
 }
 
-template <class T> size_t addressed_map<T>::size() { return mSize;}
-template <class T> size_t addressed_map<T>::capacity() { return mCapacity;}
+template <class T> int addressed_map<T>::size() { return mSize;}
+template <class T> int addressed_map<T>::capacity() { return mCapacity;}
 
 template <class T> void addressed_map<T>::readdress_list(int key) {
   int prevCapacity = mCapacity;
