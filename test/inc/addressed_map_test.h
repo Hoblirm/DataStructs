@@ -138,20 +138,73 @@ class addressed_map_test : public CxxTest::TestSuite {
        TS_ASSERT(*list.find(1) == "Banana");
        TS_ASSERT(*list.find(2) == "Carrot");
        TS_ASSERT_EQUALS(list.size(),3);
-       //TS_ASSERT_EQUALS(list.content_size(),3);
 
        // Remove the middle entry.
-       list.erase(1);
+       int status = list.erase(1);
 
        // Ensure that the middle entry was removed.
-       //TS_ASSERT_EQUALS(*str_ptr,"Banana");
+       TS_ASSERT_EQUALS(status,0);
        TS_ASSERT_EQUALS(list.size(),2);
-//       TS_ASSERT_EQUALS(list.content_size(),2);
        TS_ASSERT(list.find(-1) == 0);
        TS_ASSERT_EQUALS(*list.find(0), "Apple");
        TS_ASSERT(list.find(1) == 0);
+       TS_ASSERT_EQUALS(list.erase(1),-1);
        TS_ASSERT_EQUALS(*list.find(2), "Carrot");
        TS_ASSERT(list.find(4) == 0);
+       TS_ASSERT_EQUALS(list.erase(4),-1);
+    }
+
+    // It should be able to iterate all the objects in the list.
+    void testObjectIteration(void) {
+       addressed_map<string> list;
+
+       string str1("Apple");
+       string str2("Banana");
+       string str3("Carrot");
+
+       list.insert(0,str2);
+       list.insert(1,str3);
+       list.insert(2,str1);
+
+       // Loop through all the objects.
+       int i = 0;
+       for (string* it = list.getFirst(); it != 0; it = list.getNext()) {
+          TS_ASSERT_EQUALS(*it,*list.find(i));
+          i++;
+       }
+       TS_ASSERT_EQUALS(i,3);
+       TS_ASSERT(list.getNext() == 0);
+
+       // Loop a second time to ensure that getFirst() is resetting
+       // the iterator.
+       i = 0;
+       for (string* it = list.getFirst(); it != 0; it = list.getNext()) {
+          TS_ASSERT_EQUALS(*it,*list.find(i));
+          i++;
+       }
+       TS_ASSERT_EQUALS(i,3);
+       TS_ASSERT(list.getNext() == 0);
+
+    }
+
+    // It should be able to clear all content from the map.
+    void testClear() {
+       addressed_map<string> list;
+
+       string str1("Apple");
+       string str2("Banana");
+       string str3("Carrot");
+
+       list.insert(0,str2);
+       list.insert(1,str3);
+       list.insert(2,str1);
+
+       list.clear();
+
+       TS_ASSERT(list.find(0)==0);
+       TS_ASSERT(list.find(1)==0);
+       TS_ASSERT(list.find(2)==0);
+       TS_ASSERT(list.getFirst()==0);
     }
 
 };

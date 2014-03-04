@@ -1,7 +1,8 @@
 #ifndef ADDRESSED_MAP_H
 #define ADDRESSED_MAP_H
 
-template <class T> class addressed_map {
+template <class T> 
+class addressed_map {
 
   public:
   addressed_map();
@@ -9,14 +10,20 @@ template <class T> class addressed_map {
 
   void insert(int key, const T& obj);
   T* find(int key);
-  T* erase(int key);
+  int erase(int key);
   void clear();
+
+  T* getFirst();
+  T* getNext();
 
   int size();
   int capacity();
 
   private:
   T** mList;
+
+  T* mNextPtr;
+  int mNextIndex;
 
   int mSize;
   int mCapacity;
@@ -26,26 +33,53 @@ template <class T> class addressed_map {
   void grow_list(int key); 
 };
 
-template <class T> addressed_map<T>::addressed_map() {
+template <class T> 
+addressed_map<T>::addressed_map() {
   mSize = 0;
   mMinKeyAssigned = false;
   mCapacity = 8;
+  mNextIndex = -1;
   mList = new T*[mCapacity]();
 }
 
-template <class T> addressed_map<T>::~addressed_map() {
+template <class T> 
+addressed_map<T>::~addressed_map() {
    clear();
    delete [] mList;
 }
 
-template <class T> void addressed_map<T>::clear() {
+template <class T> 
+void addressed_map<T>::clear() {
    for (int i=0;i<mCapacity;i++) {
-      if (mList[i]) delete mList[i];
+      if (mList[i]) {
+         delete mList[i];
+         mList[i] = 0;
+      }
    }
    mSize = 0;
 }
 
-template <class T> void addressed_map<T>::insert(int key, const T& obj) {
+template <class T>
+T* addressed_map<T>::getFirst() {
+   mNextIndex = -1;
+   return getNext();
+}
+
+template <class T>
+T* addressed_map<T>::getNext() {
+   mNextPtr = 0;
+   for (int i = mNextIndex+1;i<mCapacity;i++){
+      if (mList[i]) {
+         mNextPtr = mList[i];
+         mNextIndex = i;
+         break;
+      }
+   }
+   return mNextPtr;
+}
+
+template <class T> 
+void addressed_map<T>::insert(int key, const T& obj) {
    if (!mMinKeyAssigned) {
       mMinKey = key; 
       mMinKeyAssigned = true;
@@ -68,22 +102,28 @@ template <class T> T* addressed_map<T>::find(int key) {
    }
 }
 
-template <class T> T* addressed_map<T>::erase(int key) {
+template <class T> 
+int addressed_map<T>::erase(int key) {
    T* ptr = find(key);
 
    if (ptr){
       delete mList[key - mMinKey];
       mList[key - mMinKey] = 0;
       mSize--;
+      return 0;
+   } else {
+      return -1;
    }
-
-   return ptr;
 }
 
-template <class T> int addressed_map<T>::size() { return mSize;}
-template <class T> int addressed_map<T>::capacity() { return mCapacity;}
+template <class T> 
+int addressed_map<T>::size() { return mSize;}
 
-template <class T> void addressed_map<T>::readdress_list(int key) {
+template <class T> 
+int addressed_map<T>::capacity() { return mCapacity;}
+
+template <class T> 
+void addressed_map<T>::readdress_list(int key) {
   int prevCapacity = mCapacity;
   while (key < mMinKey) {
     mMinKey -= mCapacity;
@@ -99,7 +139,8 @@ template <class T> void addressed_map<T>::readdress_list(int key) {
   mList = tmpList;
 }
 
-template <class T> void addressed_map<T>::grow_list(int key) {
+template <class T> 
+void addressed_map<T>::grow_list(int key) {
   int prevCapacity = mCapacity;
   while ( (key - mMinKey) >= mCapacity ) {
     mCapacity *=2;
