@@ -10,201 +10,240 @@ class addressed_map_test : public CxxTest::TestSuite {
 
     // It should be able to perform a simple insert and find.
     void testZeroBasedKey(void) {
-      addressed_map<string> list;
+      addressed_map<string> addr;
 
       string str1("Apple");
       string str2("Banana");
       string str3("Carrot");
 
-      list.insert(0,str1);
-      list.insert(1,str2);
-      list.insert(2,str3);
+      addr.insert(0,str1);
+      addr.insert(1,str2);
+      addr.insert(2,str3);
 
-      TS_ASSERT(*list.find(1) == "Banana");
-      TS_ASSERT(*list.find(0) == "Apple");
-      TS_ASSERT(*list.find(2) == "Carrot");
+      TS_ASSERT(*addr.find(1) == "Banana");
+      TS_ASSERT(*addr.find(0) == "Apple");
+      TS_ASSERT(*addr.find(2) == "Carrot");
     }
 
     // It should be able to perform inserts on negative keys.
     void testNegativeKey(void) {
-      addressed_map<std::string> list;
+      addressed_map<std::string> addr;
 
       string str1("Apple");
       string str2("Banana");
       string str3("Carrot");
 
-      list.insert(-2,str1);
-      list.insert(-1,str2);
-      list.insert(-3,str3);
+      addr.insert(-2,str1);
+      addr.insert(-1,str2);
+      addr.insert(-3,str3);
 
-      TS_ASSERT(*list.find(-2) == "Apple");
-      TS_ASSERT(*list.find(-1) == "Banana");
-      TS_ASSERT(*list.find(-3) == "Carrot");
+      TS_ASSERT(*addr.find(-2) == "Apple");
+      TS_ASSERT(*addr.find(-1) == "Banana");
+      TS_ASSERT(*addr.find(-3) == "Carrot");
     }
 
     // It should be able to perform inserts on sparse keys.
     void testSparseKey(void) {
-      addressed_map<string> list;
-     
+      addressed_map<string> addr;
+
       string str1("Apple");
       string str2("Banana");
       string str3("Carrot");
 
-      list.insert(10,str1);
-      list.insert(-128,str2);
-      list.insert(512,str3);
+      addr.insert(10,str1);
+      addr.insert(-128,str2);
+      addr.insert(512,str3);
 
-      TS_ASSERT(*list.find(-128) == "Banana");
-      TS_ASSERT(*list.find(10) == "Apple");
-      TS_ASSERT(*list.find(512) == "Carrot");
+      TS_ASSERT(*addr.find(-128) == "Banana");
+      TS_ASSERT(*addr.find(10) == "Apple");
+      TS_ASSERT(*addr.find(512) == "Carrot");
     }
 
-    // It should be able to perform inserts with many entries.
-    void testStressKey(void) {
-      addressed_map<int> list;
-
-      // Insert many entries into the map.
-      for (int key=-100000;key<key-1000; key++) {
-        list.insert(key,key*10);
-      }
-      for (int key=10000; key < 300000; key++) {
-        list.insert(key,key*10);
-      }
-      for (int key=-20;key<100;key++) {
-        list.insert(key,key*10);
-      }
-      for (int key=-300000;key>-400000;key--) {
-        list.insert(key,key*10);
-      }
-
-      // Verify that all the inserted keys can be found.
-      for (int key=-100000;key<key-1000; key++) {
-        TS_ASSERT_EQUALS(*list.find(key),key*10);
-      }
-      for (int key=10000; key < 300000; key++) {
-        TS_ASSERT_EQUALS(*list.find(key),key*10);
-      }
-      for (int key=-20;key<100;key++) {
-        TS_ASSERT_EQUALS(*list.find(key),key*10);
-      }
-      for (int key=-300000;key>-400000;key--) {
-        TS_ASSERT_EQUALS(*list.find(key),key*10);
-      }
-
-      // Verify that all the unused keys return 0
-      TS_ASSERT(list.find(-400001) == 0);
-      for (int key=-299999;key < -100000; key++) {
-        TS_ASSERT(list.find(key) == 0);
-      }
-      for (int key=-999;key < -20; key++) {
-        TS_ASSERT(list.find(key) == 0);
-      }
-      for (int key=101; key < 10000; key++) {
-        TS_ASSERT(list.find(key) == 0);
-      }
-      TS_ASSERT(list.find(300001) == 0);
-    }
-
-    // It should return 0 for an invalid key.
+    // It should return end() for an invalid key.
     void testInvalidKey(void) {
-      addressed_map<string> list;
+      addressed_map<string> addr;
 
       string str1("Apple");
       string str2("Banana");
       string str3("Carrot");     
 
-      list.insert(0,str1);
-      list.insert(1,str2);
-      list.insert(2,str3);
+      addr.insert(0,str1);
+      addr.insert(1,str2);
+      addr.insert(2,str3);
 
-      TS_ASSERT(list.find(3) == 0);
-      TS_ASSERT(list.find(-1) == 0);
+      TS_ASSERT(addr.find(3) == addr.end());
+      TS_ASSERT(addr.find(-1) == addr.end());
+    }
+
+    // It should be able to used the [] operator for find and insert
+    void testBraceOperator(void) {
+      addressed_map<string> addr;
+
+      string str1("Apple");
+      string str2("Banana");
+      string str3("Carrot");
+
+      addr[0] = str1;
+      addr[1] = str2;
+      addr[2] = str3;
+
+      TS_ASSERT(addr.size() == 3);
+      TS_ASSERT(addr[1] == "Banana");
+      TS_ASSERT(addr[0] == "Apple");
+      TS_ASSERT(addr[2] == "Carrot");
     }
 
     // It should be able to remove entries by key.
     void testKeyRemoval(void) {
-       addressed_map<string> list;
+      addressed_map<string> addr;
 
-       string str1("Apple");
-       string str2("Banana");
-       string str3("Carrot");
+      string str1("Apple");
+      string str2("Banana");
+      string str3("Carrot");
 
-       list.insert(0,str1);
-       list.insert(1,str2);
-       list.insert(2,str3);
+      addr.insert(0,str1);
+      addr.insert(1,str2);
+      addr.insert(2,str3);
 
-       // Verify everything was properly inserted.
-       TS_ASSERT(*list.find(0) == "Apple");
-       TS_ASSERT(*list.find(1) == "Banana");
-       TS_ASSERT(*list.find(2) == "Carrot");
-       TS_ASSERT_EQUALS(list.size(),3);
+      // Verify everything was properly inserted.
+      TS_ASSERT(*addr.find(0) == "Apple");
+      TS_ASSERT(*addr.find(1) == "Banana");
+      TS_ASSERT(*addr.find(2) == "Carrot");
+      TS_ASSERT_EQUALS(addr.size(),3);
 
-       // Remove the middle entry.
-       int status = list.erase(1);
+      // Remove the middle entry.
+      addr.erase(1);
 
-       // Ensure that the middle entry was removed.
-       TS_ASSERT_EQUALS(status,0);
-       TS_ASSERT_EQUALS(list.size(),2);
-       TS_ASSERT(list.find(-1) == 0);
-       TS_ASSERT_EQUALS(*list.find(0), "Apple");
-       TS_ASSERT(list.find(1) == 0);
-       TS_ASSERT_EQUALS(list.erase(1),-1);
-       TS_ASSERT_EQUALS(*list.find(2), "Carrot");
-       TS_ASSERT(list.find(4) == 0);
-       TS_ASSERT_EQUALS(list.erase(4),-1);
+      // Ensure that the middle entry was removed.
+      TS_ASSERT_EQUALS(addr.size(),2);
+      TS_ASSERT(addr.find(-1) == addr.end());
+      TS_ASSERT_EQUALS(*addr.find(0), "Apple");
+      TS_ASSERT(addr.find(1) == addr.end());
+      TS_ASSERT_EQUALS(*addr.find(2), "Carrot");
+      TS_ASSERT(addr.find(4) == addr.end());
     }
 
-    // It should be able to iterate all the objects in the list.
+    // It should be able to provide the count for a key.
+    void testKeyCount(void) {
+      addressed_map<string> addr;
+      
+      string str1("Apple");
+      string str2("Banana");
+      string str3("Carrot");
+
+      addr.insert(0,str1);
+      addr.insert(1,str2);
+      addr.insert(2,str3);
+
+      TS_ASSERT_EQUALS(addr.count(0),1);
+      TS_ASSERT_EQUALS(addr.count(1),1);
+      TS_ASSERT_EQUALS(addr.count(2),1);
+      TS_ASSERT_EQUALS(addr.count(-1),0);
+      TS_ASSERT_EQUALS(addr.count(3),0);
+    }
+
+    // It should be able to iterate all the objects in the addr.
     void testObjectIteration(void) {
-       addressed_map<string> list;
+      addressed_map<string> addr;
 
-       string str1("Apple");
-       string str2("Banana");
-       string str3("Carrot");
+      string str1("Apple");
+      string str2("Banana");
+      string str3("Carrot");
+      string str4("Doritos");
+      string str5("Egg");
 
-       list.insert(0,str2);
-       list.insert(1,str3);
-       list.insert(2,str1);
+      addr.insert(0,str2);
+      addr.insert(1,str3);
+      addr.insert(2,str1);
+      addr.insert(3,str4);
+      addr.insert(4,str5);
 
-       // Loop through all the objects.
-       int i = 0;
-       for (string* it = list.getFirst(); it != 0; it = list.getNext()) {
-          TS_ASSERT_EQUALS(*it,*list.find(i));
-          i++;
-       }
-       TS_ASSERT_EQUALS(i,3);
-       TS_ASSERT(list.getNext() == 0);
+      // Loop through all the objects.
+      int i = 0;
+      for (addressed_map<string>::iterator it = addr.begin(); it != addr.end(); it++) {
+        TS_ASSERT_EQUALS(*it,*addr.find(i));
+        i++;
+      }
+      TS_ASSERT_EQUALS(i,5);
 
-       // Loop a second time to ensure that getFirst() is resetting
-       // the iterator.
-       i = 0;
-       for (string* it = list.getFirst(); it != 0; it = list.getNext()) {
-          TS_ASSERT_EQUALS(*it,*list.find(i));
-          i++;
-       }
-       TS_ASSERT_EQUALS(i,3);
-       TS_ASSERT(list.getNext() == 0);
+      // Ensure that the map can still be iterated after a removal.
+      addr.erase(1);
+      addr.erase(3);
 
+      addressed_map<string>::iterator it = addr.begin();
+      TS_ASSERT_EQUALS(*it,"Banana");
+      it++;
+      TS_ASSERT_EQUALS(*it,"Apple");
+      it++;
+      TS_ASSERT_EQUALS(*it,"Egg");
+      it++;
+      TS_ASSERT_EQUALS(it,addr.end());
     }
 
     // It should be able to clear all content from the map.
     void testClear() {
-       addressed_map<string> list;
+      addressed_map<string> addr;
 
-       string str1("Apple");
-       string str2("Banana");
-       string str3("Carrot");
+      string str1("Apple");
+      string str2("Banana");
+      string str3("Carrot");
 
-       list.insert(0,str2);
-       list.insert(1,str3);
-       list.insert(2,str1);
+      addr.insert(0,str2);
+      addr.insert(1,str3);
+      addr.insert(2,str1);
 
-       list.clear();
+      addr.clear();
 
-       TS_ASSERT(list.find(0)==0);
-       TS_ASSERT(list.find(1)==0);
-       TS_ASSERT(list.find(2)==0);
-       TS_ASSERT(list.getFirst()==0);
+      TS_ASSERT(addr.find(0)==addr.end());
+      TS_ASSERT(addr.find(1)==addr.end());
+      TS_ASSERT(addr.find(2)==addr.end());
+      TS_ASSERT(addr.begin()==addr.end());
+      TS_ASSERT(addr.size()==0);
     }
 
+    // It should be able to perform inserts with many entries.
+    void testStressKey(void) {
+      addressed_map<int> addr;
+
+      // Insert many entries into the map.
+      for (int key=-100000;key<key-1000; key++) {
+        addr.insert(key,key*10);
+      }
+      for (int key=10000; key < 300000; key++) {
+        addr.insert(key,key*10);
+      }
+      for (int key=-20;key<100;key++) {
+        addr.insert(key,key*10);
+      }
+      for (int key=-300000;key>-400000;key--) {
+        addr.insert(key,key*10);
+      }
+
+      // Verify that all the inserted keys can be found.
+      for (int key=-100000;key<key-1000; key++) {
+        TS_ASSERT_EQUALS(*addr.find(key),key*10);
+      }
+      for (int key=10000; key < 300000; key++) {
+        TS_ASSERT_EQUALS(*addr.find(key),key*10);
+      }
+      for (int key=-20;key<100;key++) {
+        TS_ASSERT_EQUALS(*addr.find(key),key*10);
+      }
+      for (int key=-300000;key>-400000;key--) {
+        TS_ASSERT_EQUALS(*addr.find(key),key*10);
+      }
+
+      // Verify that all the unused keys return 0
+      TS_ASSERT(addr.find(-400001) == addr.end());
+      for (int key=-299999;key < -100000; key++) {
+        TS_ASSERT(addr.find(key) == addr.end());
+      }
+      for (int key=-999;key < -20; key++) {
+        TS_ASSERT(addr.find(key) == addr.end());
+      }
+      for (int key=101; key < 10000; key++) {
+        TS_ASSERT(addr.find(key) == addr.end());
+      }
+      TS_ASSERT(addr.find(300001) == addr.end());
+    }
 };
