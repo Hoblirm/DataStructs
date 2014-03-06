@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
   Telem_t telem[SIZE];
   ObjMap_t objMap[SIZE];
   std::map<Telem_t,std::string> ordered_list;
-  addressed_map<ObjMap_t> addressed_list;
+  addressed_map<int, ObjMap_t> addressed_list;
   for (int i=0;i<SIZE;i++){
     std::stringstream ss;
     telem[i].id = i+MIN;
@@ -86,12 +86,12 @@ int main(int argc, char** argv) {
     objMap[i].id = i+MIN;
 
     ordered_list.insert(std::pair<Telem_t,std::string>(telem[i],objMap[i].desc));
-    addressed_list.insert(i+MIN,objMap[i]);
+    addressed_list.insert(std::pair<int,ObjMap_t>(i+MIN,objMap[i]));
   }
 
   start_test("Addressed List");
   for (int i=0;i<SIZE;i++){
-    addressed_list.find(i);
+    addressed_list.find(i)->second;
   }
   stop_test();
 
@@ -101,12 +101,12 @@ int main(int argc, char** argv) {
   } 
   stop_test();
 
-  ObjMap_t* a = addressed_list.find(17);
+  addressed_map<int,ObjMap_t>::iterator a = addressed_list.find(17);
 
   std::cout << "The value for addressed is:\n";
-  std::cout << "  " << a->telem->id << "\n";
-  std::cout << "  " << a->telem->name << "\n";
-  std::cout << "  " << a->desc << "\n";
+  std::cout << "  " << a->second.telem->id << "\n";
+  std::cout << "  " << a->second.telem->name << "\n";
+  std::cout << "  " << a->second.desc << "\n";
   
   Telem_t tel;
   ObjMap_t obj;
@@ -114,14 +114,14 @@ int main(int argc, char** argv) {
   obj.telem->id = -10;
   
   std::cout << "Trying to find 300000\n";
-  if (!addressed_list.find(300000)) {
+  if (addressed_list.find(300000)==addressed_list.end()) {
     std::cout << "  NOT FOUND\n";
   } else {
     std::cout << "  FOUND\n";
   }
 
   std::cout << "Trying to find 1000\n";
-  if (!addressed_list.find(1000)) {
+  if (addressed_list.find(1000)==addressed_list.end()) {
     std::cout << "  NOT FOUND\n";
   } else {
     std::cout << "  FOUND\n";
