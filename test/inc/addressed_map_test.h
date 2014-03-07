@@ -1,6 +1,6 @@
 #include <cxxtest/TestSuite.h>
 
-#include "addressed_map.h"
+#include <addressed_map>
 #include <string>
 
 using namespace std;
