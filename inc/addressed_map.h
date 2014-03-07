@@ -1,7 +1,7 @@
 #ifndef ADDRESSED_MAP_H
 #define ADDRESSED_MAP_H
 
-template <typename K, typename V> 
+template <class K, typename V> 
 class addressed_map {
 
   public:
@@ -194,11 +194,7 @@ void addressed_map<K, V>::grow_obj_ary() {
   std::pair<K,V>* tmpObjAry = new std::pair<K,V>[mObjCapacity];
   for (int i=0; i < prevObjCapacity; i++) {
      tmpObjAry[i] = mObjAry[i];
-  }
-  for (int i=0; i < mPtrCapacity; i++) {
-    if (mPtrAry[i]) {
-      mPtrAry[i] = tmpObjAry + (mPtrAry[i] - mObjAry);
-    }
+     mPtrAry[tmpObjAry[i].first - mMinAddr] = &tmpObjAry[i];
   }
 
   delete [] mObjAry;
@@ -207,17 +203,10 @@ void addressed_map<K, V>::grow_obj_ary() {
 
 template <typename K, typename V>
 void addressed_map<K, V>::shift_obj_ary(std::pair<K,V>* it) {
-  for (int i=0;i < mPtrCapacity;i++) {
-    if (mPtrAry[i]) {
-      if (mPtrAry[i] > it) {
-        --mPtrAry[i];
-      }
-    }
-  }
-
   std::pair<K,V>* last = end() - 1;
   while (it != last) {
     *it = *(it+1);
+    mPtrAry[it->first - mMinAddr] = it;
     ++it;
   }
 }
