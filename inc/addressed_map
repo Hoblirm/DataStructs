@@ -1,22 +1,16 @@
-#ifndef ADDRESSED_MAP_H
-#define ADDRESSED_MAP_H
+#ifndef addressed_map_base_H
+#define addressed_map_base_H
 
 #include <addressed_vector>
 
-template <class K, typename V> 
-class addressed_map {
-
+template <typename K, typename V> 
+class addressed_map_base {
   public:
-  addressed_map();
-  ~addressed_map();
+  addressed_map_base();
+  ~addressed_map_base();
 
   typedef std::pair<K,V>* iterator;
 
-  std::pair<K,V>* insert(const std::pair<K,V>& obj);
-  V& operator[](const K& key);
-
-  std::pair<K,V>* find(const K& key);
-  void erase(const K& key);
   void clear();
 
   std::pair<K,V>* begin();
@@ -24,20 +18,17 @@ class addressed_map {
 
   int size();
   int capacity();
-  int count(const K& key);
 
-  private:
+  protected:
   addressed_vector<std::pair<K,V>*> mPtrAry;
   std::pair<K,V>* mObjAry;
 
   int mSize;
   int mObjCapacity;
-  void grow_obj_ary();
-  void shift_obj_ary(std::pair<K,V>* it);
 };
 
 template <typename K, typename V> 
-addressed_map<K, V>::addressed_map() : mSize(0), 
+addressed_map_base<K, V>::addressed_map_base() : mSize(0), 
                                        mObjCapacity(8), 
                                        mPtrAry(8)
 {
@@ -45,12 +36,12 @@ addressed_map<K, V>::addressed_map() : mSize(0),
 }
 
 template <typename K, typename V> 
-addressed_map<K, V>::~addressed_map() {
+addressed_map_base<K, V>::~addressed_map_base() {
    delete [] mObjAry;
 }
 
 template <typename K, typename V> 
-void addressed_map<K, V>::clear() {
+void addressed_map_base<K, V>::clear() {
   mSize = 0;
   mObjCapacity = 8;
   mPtrAry.clear();
@@ -59,32 +50,79 @@ void addressed_map<K, V>::clear() {
 }
 
 template <typename K, typename V>
-std::pair<K,V>* addressed_map<K, V>::begin() {
+std::pair<K,V>* addressed_map_base<K, V>::begin() {
   return mObjAry;
 }
 
 template <typename K, typename V>
-std::pair<K,V>* addressed_map<K, V>::end() {
+std::pair<K,V>* addressed_map_base<K, V>::end() {
   return mObjAry+mSize;
 }
 
 template <typename K, typename V> 
+int addressed_map_base<K, V>::size() { return mSize;}
+
+template <typename K, typename V> 
+int addressed_map_base<K, V>::capacity() { return mPtrAry.capacity();}
+
+template <class K, typename V>
+class addressed_map : public addressed_map_base<K,V> {
+  public:
+  V& operator[](const K& key);
+  std::pair<K,V>* insert(const std::pair<K,V>& obj);
+  std::pair<K,V>* find(const K& key);
+  void erase(const K& key);
+  int count(const K& key);
+ 
+  private:
+  typedef addressed_map_base<K,V> Base;
+  void grow_obj_ary();
+  void shift_obj_ary(std::pair<K,V>* it);
+};
+
+template <class K, typename V> 
 std::pair<K,V>* addressed_map<K, V>::insert(const std::pair<K,V>& obj) {
-  if (mSize >= mObjCapacity) {
+  if (Base::mSize >= Base::mObjCapacity) {
     grow_obj_ary();
   }
 
-  K key = obj.first;
-  mObjAry[mSize] = obj;
-  mPtrAry.insert(key, &mObjAry[mSize]);
-  ++mSize;
-  return mPtrAry[key];
+  int addr = obj.first.toInt();
+  Base::mObjAry[Base::mSize] = obj;
+  Base::mPtrAry.insert(addr, &Base::mObjAry[Base::mSize]);
+  ++(Base::mSize);
+  return Base::mPtrAry[addr];
 }
 
-template <typename K, typename V> 
+template <class K, typename V> 
+std::pair<K,V>* addressed_map<K, V>::find(const K& key) {
+  std::pair<K,V>** it = Base::mPtrAry.find(key.toInt());
+  if (it != Base::mPtrAry.end()) {
+    return *it;
+  } else {
+    return Base::end();
+  }
+}
+
+template <class K, typename V> 
+void addressed_map<K, V>::erase(const K& key) {
+  std::pair<K,V>* it = find(key);
+
+  if (it != Base::end()){
+    shift_obj_ary(it);
+    Base::mPtrAry.erase(key.toInt());
+    --Base::mSize;
+  } 
+}
+
+template <class K, typename V> 
+int addressed_map<K, V>::count(const K& key) {
+  return Base::mPtrAry.count(key.toInt());
+}
+
+template <class K, typename V> 
 V& addressed_map<K, V>::operator[](const K& key) {
   std::pair<K,V>* it = find(key);
-  if (it != end()) {
+  if (it != Base::end()) {
     return it->second;
   }
   else {
@@ -92,61 +130,119 @@ V& addressed_map<K, V>::operator[](const K& key) {
   }
 }
 
-template <typename K, typename V> 
-std::pair<K,V>* addressed_map<K, V>::find(const K& key) {
-  std::pair<K,V>** it = mPtrAry.find(key);
-  if (it != mPtrAry.end()) {
-    return *it;
-  } else {
-    return end();
-  }
-}
-
-template <typename K, typename V> 
-void addressed_map<K, V>::erase(const K& key) {
-  std::pair<K,V>* it = find(key);
-
-  if (it != end()){
-    shift_obj_ary(it);
-    mPtrAry.erase(key);
-    --mSize;
-  } 
-}
-
-template <typename K, typename V> 
-int addressed_map<K, V>::size() { return mSize;}
-
-template <typename K, typename V> 
-int addressed_map<K, V>::capacity() { return mPtrAry.capacity();}
-
-template <typename K, typename V> 
-int addressed_map<K, V>::count(const K& key) {
-  return mPtrAry.count(key);
-}
-
-template <typename K, typename V> 
+template <class K, typename V> 
 void addressed_map<K, V>::grow_obj_ary() {
-  int prevObjCapacity = mObjCapacity;
-  mObjCapacity *=2;
+  int prevObjCapacity = Base::mObjCapacity;
+  Base::mObjCapacity *=2;
 
-  std::pair<K,V>* tmpObjAry = new std::pair<K,V>[mObjCapacity];
+  std::pair<K,V>* tmpObjAry = new std::pair<K,V>[Base::mObjCapacity];
   for (int i=0; i < prevObjCapacity; i++) {
-     tmpObjAry[i] = mObjAry[i];
-     mPtrAry[tmpObjAry[i].first] = &tmpObjAry[i];
+     tmpObjAry[i] = Base::mObjAry[i];
+     Base::mPtrAry[tmpObjAry[i].first.toInt()] = &tmpObjAry[i];
   }
 
-  delete [] mObjAry;
-  mObjAry = tmpObjAry;
+  delete [] Base::mObjAry;
+  Base::mObjAry = tmpObjAry;
 }
 
-template <typename K, typename V>
+template <class K, typename V>
 void addressed_map<K, V>::shift_obj_ary(std::pair<K,V>* it) {
-  std::pair<K,V>* last = end() - 1;
+  std::pair<K,V>* last = Base::end() - 1;
   while (it != last) {
     *it = *(it+1);
-    mPtrAry[it->first] = it;
+    Base::mPtrAry[it->first.toInt()] = it;
     ++it;
   }
 }
 
-#endif /* ADDRESSED_MAP_H */
+template <typename V>
+class addressed_map<int,V> : public addressed_map_base<int,V> {
+  public:
+  V& operator[](const int& addr);
+  std::pair<int,V>* insert(const std::pair<int,V>& obj);
+  std::pair<int,V>* find(const int& addr);
+  void erase(const int& addr);
+  int count(const int& addr);
+
+  private:
+  typedef addressed_map_base<int,V> Base;
+  void grow_obj_ary();
+  void shift_obj_ary(std::pair<int,V>* it);
+};
+
+template <typename V> 
+std::pair<int,V>* addressed_map<int, V>::insert(const std::pair<int,V>& obj) {
+  if (Base::mSize >= Base::mObjCapacity) {
+    grow_obj_ary();
+  }
+
+  int addr = obj.first;
+  Base::mObjAry[Base::mSize] = obj;
+  Base::mPtrAry.insert(addr, &Base::mObjAry[Base::mSize]);
+  ++(Base::mSize);
+  return Base::mPtrAry[addr];
+}
+
+template <typename V> 
+std::pair<int,V>* addressed_map<int, V>::find(const int& addr) {
+  std::pair<int,V>** it = Base::mPtrAry.find(addr);
+  if (it != Base::mPtrAry.end()) {
+    return *it;
+  } else {
+    return Base::end();
+  }
+}
+
+template <typename V> 
+void addressed_map<int, V>::erase(const int& addr) {
+  std::pair<int,V>* it = find(addr);
+
+  if (it != Base::end()){
+    shift_obj_ary(it);
+    Base::mPtrAry.erase(addr);
+    --Base::mSize;
+  } 
+}
+
+template <typename V> 
+int addressed_map<int, V>::count(const int& addr) {
+  return Base::mPtrAry.count(addr);
+}
+
+template <typename V> 
+V& addressed_map<int, V>::operator[](const int& addr) {
+  std::pair<int,V>* it = find(addr);
+  if (it != Base::end()) {
+    return it->second;
+  }
+  else {
+    return insert(std::pair<int,V>(addr,V()))->second;
+  }
+}
+
+template <typename V> 
+void addressed_map<int, V>::grow_obj_ary() {
+  int prevObjCapacity = Base::mObjCapacity;
+  Base::mObjCapacity *=2;
+
+  std::pair<int,V>* tmpObjAry = new std::pair<int,V>[Base::mObjCapacity];
+  for (int i=0; i < prevObjCapacity; i++) {
+     tmpObjAry[i] = Base::mObjAry[i];
+     Base::mPtrAry[tmpObjAry[i].first] = &tmpObjAry[i];
+  }
+
+  delete [] Base::mObjAry;
+  Base::mObjAry = tmpObjAry;
+}
+
+template <typename V>
+void addressed_map<int, V>::shift_obj_ary(std::pair<int,V>* it) {
+  std::pair<int,V>* last = Base::end() - 1;
+  while (it != last) {
+    *it = *(it+1);
+    Base::mPtrAry[it->first] = it;
+    ++it;
+  }
+}
+
+#endif /* addressed_map_base_H */
