@@ -86,6 +86,7 @@ int main(int argc, char** argv) {
     objMap[i].id = i+MIN;
 
     ordered_list.insert(std::pair<Telem_t,std::string>(telem[i],objMap[i].desc));
+
     addressed_list.insert(std::pair<int,ObjMap_t>(i+MIN,objMap[i]));
   }
 

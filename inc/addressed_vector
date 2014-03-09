@@ -1,214 +1,170 @@
 #ifndef ADDRESSED_VECTOR_H
 #define ADDRESSED_VECTOR_H
 
-template <class K, typename V> 
+template <typename V> 
 class addressed_vector {
 
   public:
   addressed_vector();
+  addressed_vector(int capacity);
   ~addressed_vector();
 
-  typedef std::pair<K,V>* iterator;
+  typedef V* iterator;
 
-  std::pair<K,V>* insert(const std::pair<K,V>& obj);
-  V& operator[](const K& key);
+  V* insert(int addr, const V& obj);
+  V& operator[](int addr);
 
-  std::pair<K,V>* find(const K& key);
-  void erase(const K& key);
+  V* find(int addr);
+  void erase(int addr);
   void clear();
 
-  std::pair<K,V>* begin();
-  std::pair<K,V>* end();
+  V* begin();
+  V* end();
+  static const V mUnset;
 
   int size();
   int capacity();
-  int count(const K& key);
+  int count(int addr);
 
   private:
-  std::pair<K,V>** mPtrAry;
-  std::pair<K,V>* mObjAry;
+  V* mAry;
 
-  int mSize;
-  int mPtrCapacity;
-  int mObjCapacity;
+  int mCapacity;
   int mMinAddr;
   bool mMinAddrAssigned;
-  void shift_ptr_ary(int addr);
-  void grow_ptr_ary(int addr); 
-  void grow_obj_ary();
-  void shift_obj_ary(std::pair<K,V>* it);
+
+  void grow_ary_lhs(int addr);
+  void grow_ary_rhs(int addr); 
 };
 
-template <typename K, typename V> 
-addressed_vector<K, V>::addressed_vector() {
-  mSize = 0;
+template <typename V>
+const V addressed_vector<V>::mUnset = V();
+
+template <typename V> 
+addressed_vector<V>::addressed_vector() {
+  mMinAddr = 0;
   mMinAddrAssigned = false;
-  mPtrCapacity = mObjCapacity = 8;
-  mPtrAry = new std::pair<K,V>*[mPtrCapacity]();
-  mObjAry = new std::pair<K,V>[mObjCapacity];
+  mCapacity = 8;
+  mAry = new V[mCapacity]();
 }
 
-template <typename K, typename V> 
-addressed_vector<K, V>::~addressed_vector() {
-   delete [] mPtrAry;
-   delete [] mObjAry;
-}
-
-template <typename K, typename V> 
-void addressed_vector<K, V>::clear() {
-  mSize = 0;
-  mPtrCapacity = mObjCapacity = 8;
+template <typename V> 
+addressed_vector<V>::addressed_vector(int capacity) {
+  mMinAddr = 0;
   mMinAddrAssigned = false;
-  delete [] mPtrAry;
-  delete [] mObjAry;
-  mPtrAry = new std::pair<K,V>*[mPtrCapacity]();
-  mObjAry = new std::pair<K,V>[mObjCapacity];
+  mCapacity = capacity;
+  mAry = new V[mCapacity]();
 }
 
-template <typename K, typename V>
-std::pair<K,V>* addressed_vector<K, V>::begin() {
-  return mObjAry;
+template <typename V> 
+addressed_vector<V>::~addressed_vector() {
+   delete [] mAry;
 }
 
-template <typename K, typename V>
-std::pair<K,V>* addressed_vector<K, V>::end() {
-  return mObjAry+mSize;
+template <typename V> 
+void addressed_vector<V>::clear() {
+  mCapacity = 8;
+  mMinAddrAssigned = false;
+  delete [] mAry;
+  mAry = new V[mCapacity]();
 }
 
-template <typename K, typename V> 
-std::pair<K,V>* addressed_vector<K, V>::insert(const std::pair<K,V>& obj) {
-  K key = obj.first;
+template <typename V>
+V* addressed_vector<V>::begin() {
+  return mAry;
+}
+
+template <typename V>
+V* addressed_vector<V>::end() {
+  return mAry+mCapacity;
+}
+
+template <typename V> 
+V* addressed_vector<V>::insert(int addr, const V& obj) {
   if (!mMinAddrAssigned) {
-    mMinAddr = key; 
+    mMinAddr = addr; 
     mMinAddrAssigned = true;
   }
 
-  if (key < mMinAddr) {
-    shift_ptr_ary(key);
-  } else if ( (key - mMinAddr) >= mPtrCapacity) {
-    grow_ptr_ary(key);
+  if (addr < mMinAddr) {
+    grow_ary_lhs(addr);
+  } else if ( (addr - mMinAddr) >= mCapacity) {
+    grow_ary_rhs(addr);
   }
 
-  if (mSize >= mObjCapacity) {
-    grow_obj_ary();
-  }
-
-  mObjAry[mSize] = obj;
-  mPtrAry[key - mMinAddr] = &mObjAry[mSize];
-  ++mSize;
-  return mPtrAry[key - mMinAddr];
+  mAry[addr - mMinAddr] = obj;
+  return &mAry[addr - mMinAddr];
 }
 
-template <typename K, typename V> 
-V& addressed_vector<K, V>::operator[](const K& key) {
-  std::pair<K,V>* it = find(key);
-  if (it != end()) {
-    return it->second;
+template <typename V> 
+V& addressed_vector<V>::operator[](int addr) {
+  return mAry[addr - mMinAddr];
+}
+
+template <typename V> 
+V* addressed_vector<V>::find(int addr) {
+  if ( (addr < mMinAddr) || ((addr - mMinAddr) >= mCapacity) || (mAry[addr - mMinAddr] == mUnset) ) { 
+    return end();
   }
   else {
-    return insert(std::pair<K,V>(key,V()))->second;
+    return &mAry[addr - mMinAddr];
   }
 }
 
-template <typename K, typename V> 
-std::pair<K,V>* addressed_vector<K, V>::find(const K& key) {
-  if ( (key < mMinAddr) || ((key - mMinAddr) >= mPtrCapacity) ) { 
-    return end();
-  }
-  else if (mPtrAry[key - mMinAddr]) {
-    return mPtrAry[key - mMinAddr];
-  }
-  else { 
-    return end();
-  }
-}
-
-template <typename K, typename V> 
-void addressed_vector<K, V>::erase(const K& key) {
-  std::pair<K,V>* it = find(key);
-
-  if (it != end()){
-    shift_obj_ary(it);
-    mPtrAry[key - mMinAddr] = 0;
-    --mSize;
+template <typename V> 
+void addressed_vector<V>::erase(int addr) {
+  if (find(addr) != end()){
+    mAry[addr - mMinAddr] = mUnset;
   } 
 }
 
-template <typename K, typename V> 
-int addressed_vector<K, V>::size() { return mSize;}
+template <typename V> 
+int addressed_vector<V>::size() { return mCapacity;}
 
-template <typename K, typename V> 
-int addressed_vector<K, V>::capacity() { return mPtrCapacity;}
+template <typename V> 
+int addressed_vector<V>::capacity() { return mCapacity;}
 
-template <typename K, typename V> 
-int addressed_vector<K, V>::count(const K& key) {
-  if ( (key < mMinAddr) || ((key - mMinAddr) >= mPtrCapacity) ) {
+template <typename V> 
+int addressed_vector<V>::count(int addr) {
+  if ( (addr < mMinAddr) || ((addr - mMinAddr) >= mCapacity) || (mAry[addr - mMinAddr] == mUnset) ) {
     return 0;
-  }
-  else if (mPtrAry[key - mMinAddr]) {
-    return 1;
   }
   else {
-    return 0;
+    return 1;
   }
 }
 
-template <typename K, typename V> 
-void addressed_vector<K, V>::shift_ptr_ary(int addr) {
-  int prevCapacity = mPtrCapacity;
+template <typename V> 
+void addressed_vector<V>::grow_ary_lhs(int addr) {
+  int prevCapacity = mCapacity;
   while (addr< mMinAddr) {
-    mMinAddr -= mPtrCapacity;
-    mPtrCapacity *= 2;
+    mMinAddr -= mCapacity;
+    mCapacity *= 2;
   }
 
-  std::pair<K,V>** tmpAry = new std::pair<K,V>*[mPtrCapacity]();
+  V* tmpAry = new V[mCapacity]();
   for (int i=0; i < prevCapacity; i++) {
-     tmpAry[i+mPtrCapacity-prevCapacity] = mPtrAry[i];
+     tmpAry[i+mCapacity-prevCapacity] = mAry[i];
   }
 
-  delete [] mPtrAry;
-  mPtrAry = tmpAry;
+  delete [] mAry;
+  mAry = tmpAry;
 }
 
-template <typename K, typename V> 
-void addressed_vector<K, V>::grow_ptr_ary(int addr) {
-  int prevCapacity = mPtrCapacity;
-  while ( (addr - mMinAddr) >= mPtrCapacity ) {
-    mPtrCapacity *=2;
+template <typename V> 
+void addressed_vector<V>::grow_ary_rhs(int addr) {
+  int prevCapacity = mCapacity;
+  while ( (addr - mMinAddr) >= mCapacity ) {
+    mCapacity *=2;
   }
 
-  std::pair<K,V>** tmpAry = new std::pair<K,V>*[mPtrCapacity]();
+  V* tmpAry = new V[mCapacity]();
   for (int i=0; i < prevCapacity; i++) {
-     tmpAry[i] = mPtrAry[i];
+     tmpAry[i] = mAry[i];
   }
 
-  delete [] mPtrAry;
-  mPtrAry = tmpAry;
-}
-
-template <typename K, typename V> 
-void addressed_vector<K, V>::grow_obj_ary() {
-  int prevObjCapacity = mObjCapacity;
-  mObjCapacity *=2;
-
-  std::pair<K,V>* tmpObjAry = new std::pair<K,V>[mObjCapacity];
-  for (int i=0; i < prevObjCapacity; i++) {
-     tmpObjAry[i] = mObjAry[i];
-     mPtrAry[tmpObjAry[i].first - mMinAddr] = &tmpObjAry[i];
-  }
-
-  delete [] mObjAry;
-  mObjAry = tmpObjAry;
-}
-
-template <typename K, typename V>
-void addressed_vector<K, V>::shift_obj_ary(std::pair<K,V>* it) {
-  std::pair<K,V>* last = end() - 1;
-  while (it != last) {
-    *it = *(it+1);
-    mPtrAry[it->first - mMinAddr] = it;
-    ++it;
-  }
+  delete [] mAry;
+  mAry = tmpAry;
 }
 
 #endif /* ADDRESSED_VECTOR_H */
