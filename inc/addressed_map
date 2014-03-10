@@ -1,7 +1,8 @@
-#ifndef addressed_map_base_H
-#define addressed_map_base_H
+#ifndef ADDRESSED_MAP_H
+#define ADDRESSED_MAP_H
 
 #include <addressed_vector>
+#define DEFAULT_SIZE 1
 
 template <typename K, typename V> 
 class addressed_map_base {
@@ -29,10 +30,10 @@ class addressed_map_base {
 
 template <typename K, typename V> 
 addressed_map_base<K, V>::addressed_map_base() : mSize(0), 
-                                       mObjCapacity(8), 
-                                       mPtrAry(8)
+                                       mObjCapacity(DEFAULT_SIZE), 
+                                       mPtrAry(DEFAULT_SIZE)
 {
-   mObjAry = new std::pair<K,V>[8];
+   mObjAry = new std::pair<K,V>[DEFAULT_SIZE];
 }
 
 template <typename K, typename V> 
@@ -76,14 +77,14 @@ class addressed_map : public addressed_map_base<K,V> {
  
   private:
   typedef addressed_map_base<K,V> Base;
-  void grow_obj_ary();
+  void resize_obj_ary(int size);
   void shift_obj_ary(std::pair<K,V>* it);
 };
 
 template <class K, typename V> 
 std::pair<K,V>* addressed_map<K, V>::insert(const std::pair<K,V>& obj) {
   if (Base::mSize >= Base::mObjCapacity) {
-    grow_obj_ary();
+    resize_obj_ary(Base::mObjCapacity*2);
   }
 
   int addr = obj.first.toInt();
@@ -131,12 +132,17 @@ V& addressed_map<K, V>::operator[](const K& key) {
 }
 
 template <class K, typename V> 
-void addressed_map<K, V>::grow_obj_ary() {
+void addressed_map<K, V>::resize_obj_ary(int size) {
   int prevObjCapacity = Base::mObjCapacity;
-  Base::mObjCapacity *=2;
+  Base::mObjCapacity = size;
+
+  int minCapacity = Base::mObjCapacity;
+  if (prevObjCapacity < minCapacity) {
+     minCapacity = prevObjCapacity;
+  }
 
   std::pair<K,V>* tmpObjAry = new std::pair<K,V>[Base::mObjCapacity];
-  for (int i=0; i < prevObjCapacity; i++) {
+  for (int i=0; i < minCapacity; i++) {
      tmpObjAry[i] = Base::mObjAry[i];
      Base::mPtrAry[tmpObjAry[i].first.toInt()] = &tmpObjAry[i];
   }
@@ -166,14 +172,14 @@ class addressed_map<int,V> : public addressed_map_base<int,V> {
 
   private:
   typedef addressed_map_base<int,V> Base;
-  void grow_obj_ary();
+  void resize_obj_ary(int size);
   void shift_obj_ary(std::pair<int,V>* it);
 };
 
 template <typename V> 
 std::pair<int,V>* addressed_map<int, V>::insert(const std::pair<int,V>& obj) {
   if (Base::mSize >= Base::mObjCapacity) {
-    grow_obj_ary();
+    resize_obj_ary(Base::mObjCapacity*2);
   }
 
   int addr = obj.first;
@@ -221,12 +227,17 @@ V& addressed_map<int, V>::operator[](const int& addr) {
 }
 
 template <typename V> 
-void addressed_map<int, V>::grow_obj_ary() {
+void addressed_map<int, V>::resize_obj_ary(int size) {
   int prevObjCapacity = Base::mObjCapacity;
-  Base::mObjCapacity *=2;
+  Base::mObjCapacity = size;
+
+  int minCapacity = Base::mObjCapacity;
+  if (prevObjCapacity < Base::mObjCapacity) {
+     minCapacity = prevObjCapacity;
+  }
 
   std::pair<int,V>* tmpObjAry = new std::pair<int,V>[Base::mObjCapacity];
-  for (int i=0; i < prevObjCapacity; i++) {
+  for (int i=0; i < minCapacity; i++) {
      tmpObjAry[i] = Base::mObjAry[i];
      Base::mPtrAry[tmpObjAry[i].first] = &tmpObjAry[i];
   }
@@ -245,4 +256,4 @@ void addressed_map<int, V>::shift_obj_ary(std::pair<int,V>* it) {
   }
 }
 
-#endif /* addressed_map_base_H */
+#endif /* ADDRESSED_MAP_H */

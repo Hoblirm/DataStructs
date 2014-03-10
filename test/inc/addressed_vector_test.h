@@ -2,7 +2,6 @@
 
 #include <addressed_vector>
 #include <string>
-#include <iostream>
 using namespace std;
 
 class addressed_vector_test : public CxxTest::TestSuite {
@@ -75,9 +74,26 @@ class addressed_vector_test : public CxxTest::TestSuite {
       TS_ASSERT(addr.find(-1) == addr.end());
     }
 
+    // It should be able to initalize to a range of keys.
+    void testRangeInitialize(void) {
+      addressed_vector<string> addr(-1,1);
+
+      TS_ASSERT_EQUALS(addr.capacity(),3);
+
+      string str1("Apple");
+      string str2("Banana");
+      string str3("Carrot");     
+
+      addr.insert(-1,str1);
+      addr.insert(0,str2);
+      addr.insert(1,str3);
+
+      TS_ASSERT_EQUALS(addr.capacity(),3);
+    }
+
     // It should be able to used the [] operator for find and insert
     void testBraceOperator(void) {
-      addressed_vector<string> addr;
+      addressed_vector<string> addr(3);
 
       string str1("Apple");
       string str2("Banana");

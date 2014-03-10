@@ -1,12 +1,15 @@
 #ifndef ADDRESSED_VECTOR_H
 #define ADDRESSED_VECTOR_H
 
+using namespace std;
+
 template <typename V> 
 class addressed_vector {
 
   public:
   addressed_vector();
   addressed_vector(int capacity);
+  addressed_vector(int min, int max);
   ~addressed_vector();
 
   typedef V* iterator;
@@ -35,6 +38,7 @@ class addressed_vector {
 
   void grow_ary_lhs(int addr);
   void grow_ary_rhs(int addr); 
+  void resize_ary(int minAddr, int maxAddr);
 };
 
 template <typename V>
@@ -44,15 +48,23 @@ template <typename V>
 addressed_vector<V>::addressed_vector() {
   mMinAddr = 0;
   mMinAddrAssigned = false;
-  mCapacity = 8;
-  mAry = new V[mCapacity]();
+  mCapacity = 0;
+  mAry = new V[0]();
 }
 
 template <typename V> 
 addressed_vector<V>::addressed_vector(int capacity) {
   mMinAddr = 0;
-  mMinAddrAssigned = false;
+  mMinAddrAssigned = true;
   mCapacity = capacity;
+  mAry = new V[mCapacity]();
+}
+
+template <typename V> 
+addressed_vector<V>::addressed_vector(int min, int max) {
+  mMinAddr = min;
+  mMinAddrAssigned = true;
+  mCapacity = max-min+1;
   mAry = new V[mCapacity]();
 }
 
@@ -136,33 +148,53 @@ int addressed_vector<V>::count(int addr) {
 
 template <typename V> 
 void addressed_vector<V>::grow_ary_lhs(int addr) {
-  int prevCapacity = mCapacity;
-  while (addr< mMinAddr) {
-    mMinAddr -= mCapacity;
-    mCapacity *= 2;
+  int newCapacity = mCapacity;
+  int newMinAddr = mMinAddr;
+
+  if (mCapacity) {
+    while (addr< newMinAddr) {
+      newMinAddr -= newCapacity;
+      newCapacity *= 2;
+    }
+  } else {
+    newMinAddr = addr;
+    newCapacity = 1;
   }
 
-  V* tmpAry = new V[mCapacity]();
-  for (int i=0; i < prevCapacity; i++) {
-     tmpAry[i+mCapacity-prevCapacity] = mAry[i];
-  }
-
-  delete [] mAry;
-  mAry = tmpAry;
+  resize_ary(newMinAddr,newCapacity+mMinAddr-1);
 }
 
 template <typename V> 
 void addressed_vector<V>::grow_ary_rhs(int addr) {
-  int prevCapacity = mCapacity;
-  while ( (addr - mMinAddr) >= mCapacity ) {
-    mCapacity *=2;
+  int newCapacity = mCapacity;
+  if (mCapacity) {
+    while ( (addr - mMinAddr) >= newCapacity ) {
+      newCapacity *=2;
+    }
+  } else {
+    newCapacity = addr - mMinAddr + 1;
   }
+
+  resize_ary(mMinAddr,newCapacity+mMinAddr-1);
+}
+
+template <typename V> 
+void addressed_vector<V>::resize_ary(int minAddr, int maxAddr) {
+  int prevCapacity = mCapacity;
+  mCapacity = maxAddr-minAddr+1;
 
   V* tmpAry = new V[mCapacity]();
-  for (int i=0; i < prevCapacity; i++) {
-     tmpAry[i] = mAry[i];
+  if (prevCapacity > mCapacity) {
+     for (int i=0; i < mCapacity; i++) {
+        tmpAry[i] = mAry[i+minAddr-mMinAddr];
+     }
+  } else {
+      for (int i=0; i < prevCapacity; i++) {
+        tmpAry[i+mMinAddr-minAddr] = mAry[i];
+     }
   }
 
+  mMinAddr = minAddr;
   delete [] mAry;
   mAry = tmpAry;
 }
