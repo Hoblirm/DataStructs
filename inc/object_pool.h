@@ -1,6 +1,8 @@
 #ifndef OBJECT_POOL_H
 #define OBJECT_POOL_H
 
+#include <stdexcept>
+
 template <class T> class object_pool {
 
   public:
@@ -39,15 +41,13 @@ template <class T> object_pool<T>::~object_pool() {
 
 template <class T> T* object_pool<T>::allocate() {
    if (mIndex == mCapacity) {
-      return 0;
-   } else {
-      T* tmp = mPtrList[mIndex];
-      mIndex++;
-      return tmp;
-   }
+      throw std::runtime_error("Object pool at capacity and failed allocation.");
+   } 
+   return mPtrList[mIndex++];
 }
 
 template <class T> void object_pool<T>::release(T* ptr) {
+   ptr->reset();
    mPtrList[--mIndex] = ptr;
 }
 
