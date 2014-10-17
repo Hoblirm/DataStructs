@@ -1,4 +1,12 @@
 #include <stdlib.h>
+
+#ifdef _AIX
+  #define __IBMCPP_TR1__ 1
+  #include <unordered_map>
+#else
+  #include <tr1/unordered_map>
+#endif
+
 #include <string>
 #include <sys/time.h>
 #include <stdio.h>
@@ -6,10 +14,9 @@
 #include <iostream>
 #include <cstddef>
 #include <string.h>
-#include <tr1/unordered_map>
-#include <tr1/functional>
 
 #include <fnv_1a_hash.h>
+#include <murmur3_hash.h>
 
 class Foo {
   public:
@@ -38,43 +45,29 @@ int main(int argc, char** argv) {
   else
     printf("Unordered_map does NOT hash char*\n");
 
+  
   std::tr1::unordered_map<const char*, Foo, FNV1aHash<const char*>, CharCmpFunctor> n;
   n.insert(std::pair<const char*,Foo>(f.name.c_str(),f));
   if (n.count("One"))
-    printf("Unordered_map hashes char*\n");
+    printf("Unordered_map<FVN> hashes char*\n");
   else
-    printf("Unordered_map does NOT hash char*\n");
+    printf("Unordered_map<FVN> does NOT hash char*\n");
+  
+  std::tr1::unordered_map<const char*, Foo, Murmur3CharHash, CharCmpFunctor> o;
+  o.insert(std::pair<const char*,Foo>(f.name.c_str(),f));
+  if (o.count("One"))
+	  printf("Unordered_map<Murmur3> hashes char*\n");
+  else
+	  printf("Unordered_map<Murmur3> does NOT hash char*\n");
 
-
-  if (!(-1)){
-    printf("!-1 is true\n");
-  }else{
-    printf("!-1 is f\n");
-  }
-  if (!(2)){
-         printf("!2 is true\n");
-       }else{
-           printf("!2 is f\n");
-         }
 
   //Test hash
   char nts1[] = "Test";
   char nts2[] = "Test";
-  const char* tmp = (const char*)nts2;
-  while (*tmp)
-  {
-    char t[16];
-    t[0] = tmp[0];
-    t[1] = '\n';
-    t[2] = '\0';
-    printf(t);
-    ++tmp;
-  }
 
   std::string str1 (nts1);
   std::string str2 (nts2);
 
-  printf("size:%d\n",sizeof(size_t));
   std::tr1::hash<char*> ptr_hash;
   std::tr1::hash<std::string> str_hash;
 
