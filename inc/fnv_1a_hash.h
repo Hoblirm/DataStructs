@@ -23,7 +23,7 @@ class FNV1aHash_base
           FNV_prime = 16777619u;
           offset_basis = 2166136261u;
           break;
-
+/*
         case 8:
           // For 64 bit machines:
           printf("We are on a 64 bit machine~\n");
@@ -42,6 +42,7 @@ class FNV1aHash_base
           FNV_prime = 374144419156711147060143317175368453031918731002211u;
           offset_basis = 100029257958052580907070968620625704837092796014241193945225284501741471925557u;
           break;
+          */
       }
     }
   };
@@ -133,20 +134,21 @@ template <class Key> std::size_t FNV1aHash<Key*>::operator()(const Key* key) con
  * */
 
 
-   template <> class FNV1aHash<const char*> : FNV1aHash_base
-   {
-     public:
-       FNV1aHash(){}
-       std::size_t operator()(const char* str) const;
-   }; 
+template <> class FNV1aHash<const char*> : FNV1aHash_base
+{
+  public:
+    FNV1aHash(){}
+    std::size_t operator()(const char* str) const;
+}; 
 
-   std::size_t FNV1aHash<const char*>::operator()(const char* str) const
-   {
-   size_t hash = offset_basis;
-   unsigned int c;
-   while (c = *str++){
-   hash = (hash ^ c) * FNV_prime;
-   }
-   return hash;
-   }
-   
+std::size_t FNV1aHash<const char*>::operator()(const char* str) const
+{
+  size_t hash = offset_basis;
+  int len = strlen(str);
+  for (int i=0;i<len;i++){
+    hash = (hash ^ str[i]) * FNV_prime;
+  }
+
+  return hash;
+}
+
