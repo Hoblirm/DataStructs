@@ -12,54 +12,49 @@ struct Murmur3CuiHash{
   static const uint32_t r2 = 13;
   static const uint32_t m = 5;
   static const uint32_t n = 0xe6546b64;
-  
-  uint32_t seed;
-  Murmur3CuiHash(uint32_t s=0) : seed(s) {}
 
-    size_t operator()(const char* key) const{
-      uint32_t hash = seed;
-      const uint32_t *blocks = (const uint32_t *) key;
-      uint32_t k;
+  size_t operator()(const char* key, uint32_t seed = 0) const{
+    uint32_t hash = seed;
+    const uint32_t *blocks = (const uint32_t *) key;
+    uint32_t k;
 
+    k = blocks[0];
+    k *= c1;
+    k = ROTL32(k,r1);
+    k *= c2;
+    hash ^= k;
+    hash = ROTL32(hash,r2) * m + n;
 
-      k = blocks[0];
-      k *= c1;
-      k = ROTL32(k,r1);
-      k *= c2;
-      hash ^= k;
-      hash = ROTL32(hash,r2) * m + n;
+    k = blocks[1];
+    k *= c1;
+    k = ROTL32(k,r1);
+    k *= c2;
+    hash ^= k;
 
-      k = blocks[1];
-      k *= c1;
-      k = ROTL32(k,r1);
-      k *= c2;
-      hash ^= k;
-      hash = ROTL32(hash,r2) * m + n;
+    hash = ROTL32(hash,r2) * m + n;
+    k = blocks[2];
+    k *= c1;
+    k = ROTL32(k,r1);
+    k *= c2;
+    hash ^= k;
+    hash = ROTL32(hash,r2) * m + n;
 
-      k = blocks[2];
-      k *= c1;
-      k = ROTL32(k,r1);
-      k *= c2;
-      hash ^= k;
-      hash = ROTL32(hash,r2) * m + n;
+    k = blocks[3];
+    k *= c1;
+    k = ROTL32(k,r1);
+    k *= c2;
+    hash ^= k;
+    hash = ROTL32(hash,r2) * m + n;
 
-      k = blocks[3];
-      k *= c1;
-      k = ROTL32(k,r1);
-      k *= c2;
-      hash ^= k;
-      hash = ROTL32(hash,r2) * m + n;
+    hash ^= 16;
+    hash ^= (hash >> 16);
+    hash *= 0x85ebca6b;
+    hash ^= (hash >> 13);
+    hash *= 0xc2b2ae35;
+    hash ^= (hash >> 16);
 
-
-      hash ^= 16;
-      hash ^= (hash >> 16);
-      hash *= 0x85ebca6b;
-      hash ^= (hash >> 13);
-      hash *= 0xc2b2ae35;
-      hash ^= (hash >> 16);
-
-      return hash;
-    }
+    return hash;
+  }
 };
 
 #endif
