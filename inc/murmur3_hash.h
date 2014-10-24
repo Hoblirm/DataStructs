@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #define ROTL32(num,amount) (((num) << (amount)) | ((num) >> (32 - (amount))))
+#define FORCE_INLINE __attribute__((always_inline))
 
 struct Murmur3CharHash{
 
@@ -17,7 +18,7 @@ struct Murmur3CharHash{
     return MurmurHash3_x86_32(key,strlen(key), seed);
   }
 
-  inline uint32_t MurmurHash3_x86_32 ( const void * key, const int len,
+  FORCE_INLINE uint32_t MurmurHash3_x86_32 ( const void * key, const int len,
       uint32_t seed) const
   {
     const uint8_t * data = (const uint8_t*)key;
