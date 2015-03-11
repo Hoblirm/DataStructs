@@ -1,0 +1,159 @@
+#ifndef SHARED_ARRAY_H
+#define SHARED_ARRAY_H
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+
+#include <pthread.h>
+
+class shared_array {
+
+  public:
+  shared_array() : mSize(0), mOpened(false)
+  {
+  }
+
+  ~shared_array()
+  {
+    close();
+  }
+
+  int create(char* filepath, int size)
+  {
+    if (mOpened)
+    {
+      perror("Shared array is already opened.");
+      return -1;
+    }
+
+    mArraySize = size;
+    mTotalFileSize = (sizeof(int)*mArraySize) + sizeof(pthread_mutex_t);
+    /* Open a file for writing.
+     *  - Creating the file if it doesn't exist.
+     *  - Truncating it to 0 size if it already exists. (not really needed)
+     *
+     * Note: "O_WRONLY" mode is not sufficient when mmaping.
+     */
+    int fd = open(FILEPATH, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
+    if (fd == -1)
+    {
+      perror("Error opening file for writing.");
+	  return -2;
+    }
+
+    /* Stretch the file size to the size of the (mmapped) array */
+    int result = lseek(fd, mTotalFileSize-1, SEEK_SET);
+    if (result == -1) 
+    {
+	  close(fd);
+      perror("Error calling lseek() to 'strech' the file");
+      return -3;
+    }
+
+	/* Something needs to be written at the end of the file to
+     * have the file actually have the new size.
+     * Just writing an empty string at the current file position will do.
+     *
+     * Note:
+     *  - The current position in the file is at the end of the stretched 
+     *    file due to the call to lseek().
+     *  - An empty string is actually a single '\0' character, so a zero-byte
+     *    will be written at the last byte of the file.
+     */
+    result = write(fd, "", 1);
+    if (result != 1) 
+    {
+	  close(fd);
+	  perror("Error writing last byte of the file");
+	  return -4;
+    }
+    
+    return map_memory(fd);
+  }
+
+  int open(char* filepath, int size)
+  {
+    if (mOpened)
+    {
+      perror("Shared array is already opened");
+      return -1;
+    }
+
+    mArraySize = size;
+    mTotalFileSize = (sizeof(int)*mArraySize) + sizeof(pthread_mutex_t);
+
+    int fd = open(filepath, O_RDWR);
+    if (fd == -1) 
+    {
+      perror("Error opening file");
+      return -2;
+    }
+
+    
+    return map_memory(fd);
+  }
+
+  int close()
+  {
+    // File is already closed, or never opened.
+    if (!mOpened)
+    {
+      return 0;
+    }
+
+    // Free the memory.  Since the mutex is at the front of the mapped memory, we
+    // can use its pointer to unmap the memory.  This is a bit of a kludge, but it
+    // should work so long as the mutex uses the mapped memory's starting address.
+    if (munmap((*int)mMutex, mTotalFileSize) == -1) 
+    {
+	  perror("Error un-mmapping the file");
+      return -1;
+    }
+    else
+    {
+      mOpened = false;
+      return 0;
+    }
+  }
+
+  private:
+  
+  int map_memory(int fd)
+  {
+    /* Now the file is ready to be mmapped. */
+    int* map = mmap(0, mTotalFileSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (map == MAP_FAILED) {
+      close(fd);
+      perror("Error mmapping the file");
+      return -4;
+    }
+
+    /* Now that the memory is mapped, we can close the file. */
+    close(fd);
+
+    // Assign the mutex and array to the mapped memory.  We want a mutex to be part of
+    // the shared memory to provide a means to synchronize between processes.  This
+    // will be at the front of the mapped memory.  The actual array of data is offset 
+    // by the size of the mutex.
+    mMutex = map;
+    mArray = ((char*)map) + sizeof(pthread_mutex_t);
+    mOpened = true;
+
+    return 0;
+  }
+
+  int* mArray;
+  int mArraySize;
+  int mTotalFileSize;
+  bool mOpened;
+  pthread_mutex_t* mMutex; 
+  
+};
+
+
+#endif /* SHARED_ARRAY */
