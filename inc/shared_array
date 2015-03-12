@@ -11,10 +11,11 @@
 
 #include <pthread.h>
 
+template <typename T>
 class shared_array {
 
   public:
-  shared_array() : mSize(0), mOpened(false)
+  shared_array() : mArraySize(0), mOpened(false)
   {
   }
 
@@ -31,15 +32,18 @@ class shared_array {
       return -1;
     }
 
+    // Set array and file size.  The shared memory will contain enough
+    // room for the array plus a mutex.
     mArraySize = size;
-    mTotalFileSize = (sizeof(int)*mArraySize) + sizeof(pthread_mutex_t);
+    mTotalFileSize = (sizeof(T)*mArraySize) + sizeof(pthread_mutex_t);
+    
     /* Open a file for writing.
      *  - Creating the file if it doesn't exist.
      *  - Truncating it to 0 size if it already exists. (not really needed)
      *
      * Note: "O_WRONLY" mode is not sufficient when mmaping.
      */
-    int fd = open(FILEPATH, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
+    int fd = ::open(filepath, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
     if (fd == -1)
     {
       perror("Error opening file for writing.");
@@ -50,7 +54,7 @@ class shared_array {
     int result = lseek(fd, mTotalFileSize-1, SEEK_SET);
     if (result == -1) 
     {
-	  close(fd);
+	  ::close(fd);
       perror("Error calling lseek() to 'strech' the file");
       return -3;
     }
@@ -68,12 +72,30 @@ class shared_array {
     result = write(fd, "", 1);
     if (result != 1) 
     {
-	  close(fd);
+	  ::close(fd);
 	  perror("Error writing last byte of the file");
 	  return -4;
     }
     
-    return map_memory(fd);
+    result = map_memory(fd);
+    if (result < 0)
+    {
+      return result;
+    }
+
+    // Initialize the mutex.  We must create a mutex attribute since
+    // it must be specified as a shared mutex.  Otherwise it will not
+    // be usable by other processes.
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
+    if (pthread_mutex_init(mMutexPtr,&attr) != 0)
+    {
+      perror("Failed initializing mutex.");
+      return -6;
+    }
+
+    return 0;
   }
 
   int open(char* filepath, int size)
@@ -84,17 +106,18 @@ class shared_array {
       return -1;
     }
 
+    // Set array and file size.  The shared memory will contain enough
+    // room for the array plus a mutex.
     mArraySize = size;
-    mTotalFileSize = (sizeof(int)*mArraySize) + sizeof(pthread_mutex_t);
+    mTotalFileSize = (sizeof(T)*mArraySize) + sizeof(pthread_mutex_t);
 
-    int fd = open(filepath, O_RDWR);
+    int fd = ::open(filepath, O_RDWR);
     if (fd == -1) 
     {
       perror("Error opening file");
       return -2;
     }
 
-    
     return map_memory(fd);
   }
 
@@ -109,7 +132,7 @@ class shared_array {
     // Free the memory.  Since the mutex is at the front of the mapped memory, we
     // can use its pointer to unmap the memory.  This is a bit of a kludge, but it
     // should work so long as the mutex uses the mapped memory's starting address.
-    if (munmap((*int)mMutex, mTotalFileSize) == -1) 
+    if (munmap((void*)mMutexPtr, mTotalFileSize) == -1) 
     {
 	  perror("Error un-mmapping the file");
       return -1;
@@ -121,37 +144,67 @@ class shared_array {
     }
   }
 
+  T* lock()
+  {
+    if (mOpened && (pthread_mutex_lock(mMutexPtr) == 0))
+    {
+      return mArray;
+    }
+    else
+    {
+      perror("Could not lock shared array.");
+      return NULL;
+    }
+  }
+
+  int unlock(T*& ary)
+  {
+    // Set array to NULL to prevent it from being used when
+    // the lock is not acquired.
+    ary = NULL;
+
+    if (mOpened && (pthread_mutex_unlock(mMutexPtr) == 0))
+    {
+      return 0;
+    }
+    else
+    {
+      perror("Could not unlock shared array.");
+      return -1;
+    }
+  }
+
   private:
   
   int map_memory(int fd)
   {
     /* Now the file is ready to be mmapped. */
-    int* map = mmap(0, mTotalFileSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    void* map = mmap(0, mTotalFileSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (map == MAP_FAILED) {
-      close(fd);
-      perror("Error mmapping the file");
-      return -4;
+      ::close(fd);
+      perror("Error mapping the file");
+      return -5;
     }
 
     /* Now that the memory is mapped, we can close the file. */
-    close(fd);
+    ::close(fd);
 
     // Assign the mutex and array to the mapped memory.  We want a mutex to be part of
     // the shared memory to provide a means to synchronize between processes.  This
     // will be at the front of the mapped memory.  The actual array of data is offset 
     // by the size of the mutex.
-    mMutex = map;
-    mArray = ((char*)map) + sizeof(pthread_mutex_t);
+    mMutexPtr = (pthread_mutex_t*)map;
+    mArray = (T*)(((char*)map) + sizeof(pthread_mutex_t));
     mOpened = true;
 
     return 0;
   }
 
-  int* mArray;
+  T* mArray;
   int mArraySize;
   int mTotalFileSize;
   bool mOpened;
-  pthread_mutex_t* mMutex; 
+  pthread_mutex_t* mMutexPtr; 
   
 };
 
